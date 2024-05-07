@@ -4,11 +4,11 @@
 
 COMPILERF90	=	gfortran
 FREESOURCE	=	-ffree-form -ffree-line-length-none
-F90FLAGS	=       -g -fconvert=big-endian -O0 -fallow-argument-mismatch -ffpe-trap=invalid,zero,underflow,overflow
+F90FLAGS	=       -g -fconvert=big-endian -O0 -fallow-argument-mismatch -ffpe-trap=invalid,zero#,underflow,overflow
 CPPMACROS	=	-D__GFORTRAN__ -D_SIMPLE_DRIVER_
 CPP		=	cpp -C -P -traditional 
 LIBS		=
-NETCDFDIR	=	/opt/local
+NETCDFDIR	=	/usr
 NETCDFINC	=	-I$(NETCDFDIR)/include
 NETCDFLIB	=	-L$(NETCDFDIR)/lib -lnetcdff -lnetcdf
 NCARG_ROOT      =       /usr/local/ncarg
