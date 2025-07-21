@@ -1,68 +1,49 @@
 &METADATA_NAMELIST
  startdate             = "199801010630"
- enddate               = "199901010630"
- ! enddate               = "199806090100"
- loop_for_a_while      = 4
+ enddate               = "199901010600"
+ loop_for_a_while      = 10
+ output_dir            = "."
  Latitude              =  40.01
  Longitude             = -88.37
-
- ! MP Options:
-      opt_dveg  = 4  ! Vegetation model ( 1->prescribed [table LAI, shdfac=FVEG]; 2->dynamic; 3->table LAI, calculate FVEG 4->table LAI, shdfac=maximum)
-      opt_crs   = 1  ! Canopy stomatal resistance (1-> Ball-Berry; 2->Jarvis)
-      opt_btr   = 1  ! Soil moisture factor for stomatal resistance (1-> Noah; 2-> CLM; 3-> SSiB)
-      opt_run   = 1  ! Runoff and groundwater (1->SIMGM; 2->SIMTOP; 3->Schaake96; 4->BATS)
-      opt_sfc   = 1  ! Surface layer drag coeff (CH & CM) (1->M-O; 2->Chen97)
-      opt_frz   = 1  ! Supercooled liquid water (1-> NY06; 2->Koren99)
-      opt_inf   = 1  ! Frozen soil permeability (1-> NY06; 2->Koren99)
-      opt_rad   = 1  ! Radiation transfer (1->gap=F(3D,cosz); 2->gap=0; 3->gap=1--Fveg)
-      opt_alb   = 2  ! snow surface albedo (1->BATS; 2->CLASS)
-      opt_snf   = 1  ! rainfall & snowfall (1-Jordan91; 2->BATS; 3->Noah)
-      opt_tbot  = 2  ! lower boundary of soil temperature (1->zero-flux; 2->Noah)
-      opt_stc   = 1  ! snow/soil temperature time scheme (1->semi-implicit; 2->fully implicit)
-
  Forcing_Timestep      = 1800
  Noahlsm_Timestep      = 900
  Sea_ice_point         = .FALSE.
-
  Soil_layer_thickness  =    0.1            0.3            0.6            1.0
  Soil_Temperature      =  266.0995       274.0445       276.8954       279.9152
  Soil_Moisture         =  0.2981597      0.2940254      0.2713114      0.3070948
  Soil_Liquid           =  0.1611681      0.2633106      0.2713114      0.3070948
-
- ! Soil_layer_thickness  =  0.0110141, 0.0176226, 0.0281961, 0.0451138, 0.0721821, 0.1154913, 0.1847861, 0.2956578, 0.4730524, 0.7568839 ! Each level 1.6 times previous level
- ! Soil_Temperature      =  266.0995       274.0445       276.8954       279.9152, 279.9152, 279.9152, 279.9152, 279.9152, 279.9152, 279.9152
- ! Soil_Moisture         =  0.2981597      0.2940254      0.2713114      0.3070948, 0.3070948, 0.3070948, 0.3070948, 0.3070948, 0.3070948, 0.3070948,
- ! Soil_Liquid           =  0.1611681      0.2633106      0.2713114      0.3070948 0.3070948 0.3070948 0.3070948 0.3070948 0.3070948 0.3070948
-
- ! Soil_layer_thickness  =  0.0177202   0.0283523   0.0453636   0.0725818   0.1161308   0.1858093   0.2972950   0.4756719   0.7610751
- ! Soil_Temperature      =  266.0995       274.0445       276.8954       279.9152, 279.9152, 279.9152, 279.9152, 279.9152, 279.9152,
- ! Soil_Moisture         =  0.2981597      0.2940254      0.2713114      0.3070948, 0.3070948, 0.3070948, 0.3070948, 0.3070948, 0.3070948,
- ! Soil_Liquid           =  0.1611681      0.2633106      0.2713114      0.3070948 0.3070948 0.3070948 0.3070948 0.3070948 0.3070948
-
  Skin_Temperature      =  263.6909
  Canopy_water          =  3.9353027E-04
  Snow_depth            =  1.0600531E-03
  Snow_equivalent       =  2.0956997E-04
  Deep_Soil_Temperature = 285
  Landuse_dataset       = "USGS"
- Vegetation_type_index = 3
  Soil_type_index       = 8
+ Vegetation_type_index = 7
  Urban_veg_category    = 1
  glacial_veg_category  = 24
  Slope_type_index      = 1
- Air_temperature_level = 6.0
-
- ! for Noah-MP, SHDFAC_MONTHLY is used with DVEG=1, to prescribe a changing FVEG through the integration period.
- ! Shdfac_monthly        = 0.01,  0.02,  0.07,  0.17,  0.27,  0.58,  0.93,  0.96,  0.65,  0.24,  0.11,  0.02
- ! Shdfac_monthly        = 1.00,  1.00,  1.00,  1.00,  1.00,  1.00,  1.00,  1.00,  1.00,  1.00,  1.00,  1.00
- Shdfac_monthly        = 0.98,  0.98,  0.98,  0.98,  0.98,  0.98,  0.98,  0.98,  0.98,  0.98,  0.98,  0.98,  
-
+ Max_snow_albedo       = 0.75
+ Air_temperature_level = 3.0
+ Wind_level            = 6.0 
+ Green_Vegetation_Min  = 0.01
+ Green_Vegetation_Max  = 0.96
+ Usemonalb             = .FALSE.
+ Rdlai2d               = .FALSE.
+ sfcdif_option         = 1
+ iz0tlnd               = 0
+ Albedo_monthly        = 0.18,  0.17,   0.16,  0.15,  0.15,  0.15,  0.15,  0.16,  0.16,  0.17,  0.17,  0.18
+ ! Albedo_Monthly        =   0.15,  0.16,   0.17,  0.18,  0.18,  0.18,  0.18,  0.17,  0.17,  0.16,  0.16,  0.15
+ Shdfac_monthly        = 0.01,  0.02,   0.07,  0.17,  0.27,  0.58,  0.93,  0.96,  0.65,  0.24,  0.11,  0.02
+ ! lai_monthly           = 0.52,  0.92,   1.32,  1.71,  2.10,  2.50,  2.90,  2.50,  2.10,  1.71,  1.32,  0.92
+ lai_monthly           = 4.00,  4.00,   4.00,  4.00,  4.00,  4.00,  4.00,  4.00,  4.00,  4.00,  4.00,  4.00
+ Z0brd_monthly         = 0.020, 0.020, 0.025, 0.030, 0.035, 0.036, 0.035, 0.030, 0.027, 0.025, 0.020, 0.020
 /
 ------------------------------------------------------------------------------------------------------------------------------------------------------------
  UTC date/time        windspeed       wind dir         temperature      humidity        pressure           shortwave      longwave          precipitation
 yyyy mm dd hh mi       m s{-1}        degrees               K               %             hPa               W m{-2}        W m{-2}          kg m{-2} s{-1}
 ------------------------------------------------------------------------------------------------------------------------------------------------------------
-<Forcing>  This tag ("<Forcing>", not case sensitive) begins the section of forcing data.  For "loop", bondville 1998-01-01_06:00:00 copied from 1999.  1999-01-01_06:30:00 copied from 1998
+<Forcing>  This tag ("<Forcing>", not case sensitive) begins the section of forcing data.  The times have been converted from CST to UTC
 1998 01 01 06 30     5.6300001144   178.0000000000   263.9499816895    86.0999984741  1002.0000000000     0.0000000000   281.0000000000     0.0000000000
 1998 01 01 07 00     6.7399997711   178.0000000000   264.7500000000    84.6999969482  1001.0000000000     0.0000000000   282.0000000000     0.0000000000
 1998 01 01 07 30     6.2600002289   180.0000000000   265.1499938965    84.6999969482  1001.0000000000     0.0000000000   241.0000000000     0.0000000000
@@ -17583,4 +17564,3 @@ yyyy mm dd hh mi       m s{-1}        degrees               K               %   
 1999 01 01 05 00     0.6999999881   239.0000000000   254.3499908447    88.3000030518   998.0000000000     0.0000000000   180.0000000000     0.0000000000
 1999 01 01 05 30     1.0199999809   266.0000000000   254.3499908447    88.4000015259   998.0000000000     0.0000000000   180.0000000000     0.0000000000
 1999 01 01 06 00     1.0965000391   248.0000000000   254.2500000000    88.0999984741   999.0000000000     0.0000000000   182.0000000000     0.0000000000
-1999 01 01 06 30     5.6300001144   178.0000000000   263.9499816895    86.0999984741  1002.0000000000     0.0000000000   281.0000000000     0.0000000000
