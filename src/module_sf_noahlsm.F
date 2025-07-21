@@ -3858,7 +3858,12 @@ CONTAINS
   END SUBROUTINE WDFCND
 ! ----------------------------------------------------------------------
 
+#ifdef _SIMPLE_DRIVER_
+      SUBROUTINE SFCDIF_off (ZLM,ZLM_WIND,Z0,THZ0,THLM,SFCSPD,CZIL,AKMS,AKHS,&
+           VEGTYP, ISURBAN, IZ0TLND)
+#else
       SUBROUTINE SFCDIF_off (ZLM,Z0,THZ0,THLM,SFCSPD,CZIL,AKMS,AKHS)
+#endif
 
 ! ----------------------------------------------------------------------
 ! SUBROUTINE SFCDIF (renamed SFCDIF_off to avoid clash with Eta PBL)
@@ -3868,6 +3873,12 @@ CONTAINS
 ! ----------------------------------------------------------------------
 
       IMPLICIT NONE
+#ifdef _SIMPLE_DRIVER_
+      INTEGER, INTENT(IN) :: VEGTYP
+      INTEGER, INTENT(IN) :: ISURBAN
+      INTEGER, INTENT(IN) :: IZ0TLND
+      REAL,    INTENT(IN) :: ZLM_WIND
+#endif
       REAL     WWST, WWST2, G, VKRM, EXCM, BETA, BTG, ELFC, WOLD, WNEW
       REAL     PIHF, EPSU2, EPSUST, EPSIT, EPSA, ZTMIN, ZTMAX, HPBL,     &
      & SQVISC
@@ -3930,10 +3941,26 @@ CONTAINS
       ILECH = 0
 
 ! ----------------------------------------------------------------------
+#ifdef _SIMPLE_DRIVER_
+      IF ( (IZ0TLND==0) .or. (VEGTYP == ISURBAN) ) THEN
+         ! Just use the original CZIL value.
+         ZILFC = - CZIL * VKRM * SQVISC
+      ELSE
+         ! Modify CZIL according to Chen & Zhang, 2009
+         ! CZIL = 10 ** -0.40 H, ( where H = 10*Zo )
+         CZIL = 10.0 ** ( -0.40 * ( Z0 / 0.07 ) )
+         ZILFC = - CZIL * VKRM * SQVISC
+      ENDIF
+#else
       ZILFC = - CZIL * VKRM * SQVISC
+#endif
 !     C.......ZT=Z0*ZTFC
       ZU = Z0
+#ifdef _SIMPLE_DRIVER_
+      RDZ = 1./ ZLM_WIND
+#else
       RDZ = 1./ ZLM
+#endif
       CXCH = EXCM * RDZ
       DTHV = THLM - THZ0
 
@@ -3956,7 +3983,11 @@ CONTAINS
 
 ! ----------------------------------------------------------------------
       ZT = EXP (ZILFC * SQRT (USTAR * Z0))* Z0
+#ifdef _SIMPLE_DRIVER_
+      ZSLU = ZLM_WIND + ZU
+#else
       ZSLU = ZLM + ZU
+#endif
 !     PRINT*,'ZSLT=',ZSLT
 !     PRINT*,'ZLM=',ZLM
 !     PRINT*,'ZT=',ZT

@@ -6,47 +6,32 @@ module module_io
   implicit none
 
   logical :: OUTPUT_NETCDF = .TRUE.
-  logical :: OUTPUT_ASCII  = .FALSE.
+  logical :: OUTPUT_ASCII  = .TRUE.
 
 contains
 
 !------------------------------------------------------------------------------------------------
 !------------------------------------------------------------------------------------------------
 
-  subroutine initialize_output ( ncfilename, nsoil, nsnow, num_roof_layers, num_wall_layers, &
-       num_road_layers, dt, opt_dveg, opt_crs, opt_btr, opt_run, opt_sfc, opt_frz, opt_inf, &
-       opt_rad, opt_alb, opt_snf, opt_tbot, opt_stc )
+  subroutine initialize_output ( output_filename_root, nsoil, num_roof_layers, num_wall_layers, &
+       num_road_layers, dt, iz0tlnd, sfcdif_option )
     !
     ! Generic wrapper for the specific ASCII and NetCDF routines that do some initialization
     ! for the output tasks.  This needs to be called only once, before the first output calls.
     !
     implicit none
-    character(len=*), intent(in) :: ncfilename
-    integer, intent(in) :: nsoil
-    integer, intent(in) :: nsnow
-    integer, intent(in) :: num_roof_layers
-    integer, intent(in) :: num_wall_layers
-    integer, intent(in) :: num_road_layers
-    real,    intent(in) :: dt
-    integer, intent(in) :: opt_dveg
-    integer, intent(in) :: opt_crs
-    integer, intent(in) :: opt_btr
-    integer, intent(in) :: opt_run
-    integer, intent(in) :: opt_sfc
-    integer, intent(in) :: opt_frz
-    integer, intent(in) :: opt_inf
-    integer, intent(in) :: opt_rad
-    integer, intent(in) :: opt_alb
-    integer, intent(in) :: opt_snf
-    integer, intent(in) :: opt_tbot
-    integer, intent(in) :: opt_stc
+    character(len=*), intent(in) :: output_filename_root
+    integer,          intent(in) :: nsoil
+    integer,          intent(in) :: num_roof_layers
+    integer,          intent(in) :: num_wall_layers
+    integer,          intent(in) :: num_road_layers
+    real,             intent(in) :: dt ! Timestep
+    integer,          intent(in) :: iz0tlnd
+    integer,          intent(in) :: sfcdif_option
     
-    
-    if (OUTPUT_ASCII)  call initialize_ascii_output("OUTPUT.txt")
-    if (OUTPUT_NETCDF) call initialize_netcdf_output(ncfilename, nsoil, nsnow, &
-         num_roof_layers, num_wall_layers, num_road_layers, dt, opt_dveg, &
-         opt_crs, opt_btr, opt_run, opt_sfc, opt_frz, opt_inf, opt_rad, &
-         opt_alb, opt_snf, opt_tbot, opt_stc )
+    if (OUTPUT_ASCII)  call initialize_ascii_output(output_filename_root//".txt")
+    if (OUTPUT_NETCDF) call initialize_netcdf_output(output_filename_root//".nc", nsoil, num_roof_layers, num_wall_layers, &
+         num_road_layers, dt, iz0tlnd, sfcdif_option)
 
   end subroutine initialize_output
 
@@ -149,7 +134,7 @@ contains
     ! units when the run is completed.
     !
     implicit none
-    !KWM write(*,'("Closing output files.")')
+    write(*,'("Closing output files.")')
     if (OUTPUT_ASCII)  call output_ascii_close
     if (OUTPUT_NETCDF) call output_netcdf_close
   end subroutine output_close

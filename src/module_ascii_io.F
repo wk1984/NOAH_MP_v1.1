@@ -17,16 +17,14 @@ contains
 !------------------------------------------------------------------------------------------------
 !------------------------------------------------------------------------------------------------
 
-  subroutine open_forcing_file(iunit, output_dir, filename, infotext, nlayers, startdate, enddate, loop_for_a_while, &
-       latitude, longitude,        &
+  subroutine open_forcing_file(iunit, output_dir, filename, infotext, nlayers, startdate, enddate,       &
+       loop_for_a_while, latitude, longitude,                                                            &
        forcing_timestep, noahlsm_timestep, ice, skin_temperature, stc, smc, sh2o, sldpth, canopy_water,  &
-       snow_depth, snow_equivalent, deep_soil_temperature,                                               &
-       opt_dveg, opt_crs, opt_btr, opt_run, opt_sfc, &
-       opt_frz, opt_inf, opt_rad, opt_alb, opt_snf, opt_tbot, opt_stc, &
-       vegetation_type_index, soil_type_index,                                                           &
+       snow_depth, snow_equivalent, deep_soil_temperature, vegetation_type_index, soil_type_index,       &
        slope_type_index, max_snow_albedo, air_temperature_level, wind_level,                             &
        albedo_monthly, shdfac_monthly, z0brd_monthly, lai_monthly, use_urban_module, urban_veg_category, &
-       usemonalb, rdlai2d, landuse_dataset)
+       green_vegetation_min, green_vegetation_max, usemonalb, rdlai2d, landuse_dataset,                  &
+       iz0tlnd, sfcdif_option)
     !
     ! Purpose:  
     !
@@ -45,10 +43,13 @@ contains
     !
     ! Input:
     !
-    !   IUNIT   :  The Fortran unit number to attach to the opened file.
-    !   FILENAME:  The pathname to the existing initial/forcing conditions to be opened.
+    !   IUNIT      :  The Fortran unit number to attach to the opened file.
+    !
+    !   FILENAME   :  The pathname to the existing initial/forcing conditions to be opened.
     !
     ! Output:
+    !
+    !   OUTPUT_DIR           :  The directory to which output data are to be written.
     !
     !   INFOTEXT             :  Character string returning some information about the namelist
     !                           selections which may be of interest to the user
@@ -61,6 +62,8 @@ contains
     !
     !   ENDDATE              :  The date representing the ending date/time of the forcing 
     !                           data in the file ( YYYYMMDDHHmm ).
+    !
+    !   LOOP_FOR_A_WHILE     :  The number of times to loop over the same year of forcing data.
     !
     !   LATITUDE             :  The latitude of the point represented in the file ( Degrees N ).
     !
@@ -96,7 +99,8 @@ contains
     !
     !   DEEP_SOIL_TEMPERATURE:  The constant-value deep soil temperature ( K ).
     !
-    !   OPT_DVEG             :  Use Dynamic Vegetation (2) or not (1).
+    !   DYNAMIC_VEGETATION:     Use Dynamic Vegetation (2) or not (1). (Ignored for Noah.
+    !                           Included for namelist compatibility with Noah-MP)
     !
     !   VEGETATION_TYPE_INDEX:  The vegetation type index ( USGS 27-category dataset ).
     !
@@ -130,6 +134,12 @@ contains
     !   URBAN_VEG_CATEGORY   :  The vegetation index that corresponds to the urban category
     !                           in the selected landuse dataset
     !
+    !   GREEN_VEGETATION_MIN :  A minimum value (climatological) of the green vegetation fraction 
+    !                           during the year
+    !
+    !   GREEN_VEGETATION_MAX :  A maximum value (climatological) of the green vegetation fraction 
+    !                           during the year
+    !
     !   USEMONALB            :  User option to use the monthly albedo values as set in ALBEDO_MONTHLY,
     !                           rather than compute the albedo from the green vegetation fraction and
     !                           the minimum and maximum albedos set in VEGPARM.TBL.
@@ -153,8 +163,8 @@ contains
     ! Output
     !
 
+    character(len=1024), intent(out)  :: output_dir
     character(len=4096), intent(out)  :: infotext
-
     integer,             intent(out)  :: nlayers
     character(len=12),   intent(out)  :: startdate
     character(len=12),   intent(out)  :: enddate
@@ -172,18 +182,7 @@ contains
     real,                intent(out)  :: snow_depth
     real,                intent(out)  :: snow_equivalent
     real,                intent(out)  :: deep_soil_temperature
-    integer,             intent(out)  :: opt_dveg
-    integer,             intent(out)  :: opt_crs
-    integer,             intent(out)  :: opt_btr
-    integer,             intent(out)  :: opt_run
-    integer,             intent(out)  :: opt_sfc
-    integer,             intent(out)  :: opt_frz
-    integer,             intent(out)  :: opt_inf
-    integer,             intent(out)  :: opt_rad
-    integer,             intent(out)  :: opt_alb
-    integer,             intent(out)  :: opt_snf
-    integer,             intent(out)  :: opt_tbot
-    integer,             intent(out)  :: opt_stc
+    integer                           :: dynamic_vegetation
     integer,             intent(out)  :: vegetation_type_index
     integer,             intent(out)  :: soil_type_index
     integer,             intent(out)  :: slope_type_index
@@ -197,9 +196,13 @@ contains
     real, dimension(12), intent(out)  :: lai_monthly
     logical,             intent(out)  :: use_urban_module
     integer,             intent(out)  :: urban_veg_category
+    real,                intent(out)  :: green_vegetation_min
+    real,                intent(out)  :: green_vegetation_max
     logical,             intent(out)  :: usemonalb
     logical,             intent(out)  :: rdlai2d
     character(len=256),  intent(out)  :: landuse_dataset
+    integer,             intent(out)  :: iz0tlnd
+    integer,             intent(out)  :: sfcdif_option
 
     !
     ! Local
@@ -218,19 +221,17 @@ contains
     integer :: nlayers_moisture
     integer :: nlayers_liquid
     logical :: lexist
-    character(len=1024) :: output_dir
 
-    namelist /METADATA_NAMELIST/ startdate, enddate, latitude, loop_for_a_while, longitude, forcing_timestep,     &
-         noahlsm_timestep, sea_ice_point, skin_temperature, soil_layer_thickness, soil_temperature, &
+    namelist /METADATA_NAMELIST/ output_dir, startdate, enddate, latitude, loop_for_a_while,    &
+         longitude, forcing_timestep, noahlsm_timestep, sea_ice_point, skin_temperature,        &
+         soil_layer_thickness, soil_temperature, &
          soil_moisture, soil_liquid, canopy_water, snow_depth, snow_equivalent,                 &
-         deep_soil_temperature, &
-         opt_dveg, opt_crs, opt_btr, opt_run, opt_sfc, &
-         opt_frz, opt_inf, opt_rad, opt_alb, opt_snf, opt_tbot, opt_stc, &
+         deep_soil_temperature, dynamic_vegetation,                                             &
          soil_type_index, vegetation_type_index, slope_type_index,                              &
          max_snow_albedo, air_temperature_level, wind_level, albedo_monthly,                    &
          shdfac_monthly, z0brd_monthly, lai_monthly, use_urban_module, urban_veg_category,      &
-         usemonalb, rdlai2d, landuse_dataset,       &
-         glacial_veg_category, output_dir
+         green_vegetation_min, green_vegetation_max, usemonalb, rdlai2d, landuse_dataset,       &
+         glacial_veg_category, iz0tlnd, sfcdif_option
 
     !
     !  Check if the specified file exists.
@@ -255,30 +256,24 @@ contains
 
     skin_temperature = badval
 
-    landuse_dataset = ""
+    green_vegetation_min = badval
 
-    output_dir = "."
+    green_vegetation_max = badval
+
+    landuse_dataset = " "
 
     !
     !  Default values
     !
 
+    output_dir = "."
     use_urban_module = .FALSE.
     usemonalb        = .FALSE.
     rdlai2d          = .FALSE.
+    iz0tlnd          = 0 
+    sfcdif_option    = 0
 
-    opt_dveg         = 2
-    opt_crs          = 1
-    opt_btr          = 1
-    opt_run          = 1
-    opt_sfc          = 1
-    opt_frz          = 1
-    opt_inf          = 1
-    opt_rad          = 1
-    opt_alb          = 2
-    opt_snf          = 1
-    opt_tbot         = 2
-    opt_stc          = 1
+    dynamic_vegetation = 2
 
     loop_for_a_while = 0
 
@@ -357,6 +352,27 @@ contains
        stop ":  ERROR EXIT"
     endif
 
+    if (green_vegetation_min < -1.E25) then
+       write(*,'(/," ***** Problem *****")')
+       write(*,'(" ***** ''GREEN_VEGETATION_MIN'' must be set in the namelist.")')
+       write(*,'(" ***** Check the namelist entries in the file ''",A,"''"/)') trim(filename)
+       stop ":  ERROR EXIT"
+    endif
+
+    if (green_vegetation_max < -1.E25) then
+       write(*,'(/," ***** Problem *****")')
+       write(*,'(" ***** ''GREEN_VEGETATION_MAX'' must be set in the namelist.")')
+       write(*,'(" ***** Check the namelist entries in the file ''",A,"''"/)') trim(filename)
+       stop ":  ERROR EXIT"
+    endif
+
+    if (green_vegetation_max < green_vegetation_min) then
+       write(*,'(/," ***** Problem *****")')
+       write(*,'(" ***** ''GREEN_VEGETATION_MAX'' may not be lower than ''GREEN_VEGETATION_MIN''.")')
+       write(*,'(" ***** Check the namelist entries in the file ''",A,"''"/)') trim(filename)
+       stop ":  ERROR EXIT"
+    endif
+
     !
     !  Determine the number of layers in the soil, based on the number
     !  of layers the user has specified in the namelist.  Make sure that 
@@ -431,15 +447,15 @@ contains
     !  Print some useful information based on the user's namelist selections.
     !
 
-    infotext = '(80("*"),/,'
+    infotext = '(80("*"),/'
     if ( usemonalb ) then
-       infotext = trim(infotext) // '"USEMONALB is set to .TRUE.  The ALBEDO_MONTHLY data as set in the namelist are ",/,'
-       infotext = trim(infotext) // '"used to set the background, snow-free albedo at each time step.",/'
+       infotext = trim(infotext) // ',"USEMONALB is set to .TRUE.  The ALBEDO_MONTHLY data as set in the namelist are ",/'
+       infotext = trim(infotext) // ',"used to set the background, snow-free albedo at each time step.",/'
     else
-       infotext = trim(infotext) // '"USEMONALB is set to .FALSE.  The ALBEDO_MONTHLY data as set in the namelist are",/,'
-       infotext = trim(infotext) // '"used only in initialization before the first time step.  Background albedo ALB ",/,'
-       infotext = trim(infotext) // '"is computed internally from the Green Vegetation Fraction and VEGPARM.TBL      ",/,'
-       infotext = trim(infotext) // '"values for ALBEDOMIN and ALBEDOMAX.",/,'
+       infotext = trim(infotext) // ',"USEMONALB is set to .FALSE.  The ALBEDO_MONTHLY data as set in the namelist are",/'
+       infotext = trim(infotext) // ',"used only in initialization before the first time step.  Background albedo ALB ",/'
+       infotext = trim(infotext) // ',"is computed internally from the Green Vegetation Fraction and VEGPARM.TBL      ",/'
+       infotext = trim(infotext) // ',"values for ALBEDOMIN and ALBEDOMAX.",/'
     endif
 
     infotext = trim(infotext) // '80("*"),/'
@@ -465,7 +481,7 @@ contains
     infotext = trim(infotext) // '80("*"),/'
     
     infotext = trim(infotext) // ')'
-    !KWM write(*, FMT=trim(infotext))
+    write(*, FMT=trim(infotext))
 
   end subroutine open_forcing_file
 
@@ -738,7 +754,7 @@ contains
             read_lwrad,       &
             read_rain
        if (ierr < 0) then
-          !KWM write(*,'("Hit the end of file.")')
+          write(*,'("Hit the end of input file.")')
           ierr = 1
 
           before = fdata("000000000000", -1.E36, -1.E36, -1.E36, -1.E36, -1.E36, -1.E36, -1.E36, -1.E36 ) 
@@ -831,7 +847,6 @@ contains
        rhf = rhf * 1.E-2
 
     else
-       print*, 'nowdate = "'//nowdate//'"'
        stop "Problem in the logic of read_forcing_text."
     endif
 
@@ -917,9 +932,9 @@ contains
     character(len=*) :: filename ! The file name to open for output.
 
     open(output_unit, file=filename, form="formatted", action="write")
-    varstring = ""
-    unitstring = ""
-    fmtstring = ""
+    varstring = " "
+    unitstring = " "
+    fmtstring = " "
     lenstring = 0
   end subroutine initialize_ascii_output
 
@@ -1036,9 +1051,9 @@ contains
        write(output_unit,'(A)') unitstring(1:lenstring)
        write(output_unit,'(A)') fmtstring(1:lenstring)
        write(output_unit,'(A)') varstring(1:lenstring)
-       varstring = ""
-       unitstring = ""
-       fmtstring = ""
+       varstring = " "
+       unitstring = " "
+       fmtstring = " "
        lenstring = 0
     endif
   end subroutine end_ascii_record
@@ -1058,7 +1073,7 @@ contains
     character(len=*), intent(in) :: h
     integer :: i
     
-    return_string = ""
+    return_string = " "
 
     do i = 1, len_trim(h)
 

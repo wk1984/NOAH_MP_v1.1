@@ -9,7 +9,6 @@ module module_netcdf_io
   integer :: dimid_ntimes
   integer :: dimid_datstrlen
   integer :: dimid_nsoil
-  integer :: dimid_nsnow
   integer :: dimid_nroof
   integer :: dimid_nwall
   integer :: dimid_nroad
@@ -26,46 +25,27 @@ contains
 !------------------------------------------------------------------------------------------------
 !------------------------------------------------------------------------------------------------
 
-  subroutine initialize_netcdf_output(ncfilename, nsoil, nsnow, &
-       num_roof_layers, num_wall_layers, num_road_layers, dt, &
-       opt_dveg, opt_crs, opt_btr, opt_run, opt_sfc, opt_frz, &
-       opt_inf, opt_rad, opt_alb, opt_snf, opt_tbot, opt_stc)
+  subroutine initialize_netcdf_output(ncfilename, nsoil, num_roof_layers, num_wall_layers, num_road_layers, dt, iz0tlnd, sfcdif_option)
     implicit none
     character(len=*),       intent(in) :: ncfilename
     integer,                intent(in) :: nsoil
-    integer,                intent(in) :: nsnow
     integer,                intent(in) :: num_roof_layers
     integer,                intent(in) :: num_wall_layers
     integer,                intent(in) :: num_road_layers
     real,                   intent(in) :: dt
-    integer,                intent(in) :: opt_dveg
-    integer,                intent(in) :: opt_crs
-    integer,                intent(in) :: opt_btr
-    integer,                intent(in) :: opt_run
-    integer,                intent(in) :: opt_sfc
-    integer,                intent(in) :: opt_frz
-    integer,                intent(in) :: opt_inf
-    integer,                intent(in) :: opt_rad
-    integer,                intent(in) :: opt_alb
-    integer,                intent(in) :: opt_snf
-    integer,                intent(in) :: opt_tbot
-    integer,                intent(in) :: opt_stc
+    integer,                intent(in) :: iz0tlnd
+    integer,                intent(in) :: sfcdif_option
 
     integer :: iret
 
     iret = nf90_create(ncfilename, NF90_CLOBBER, output_ncid)
-    call error_handler(iret, "Problem creating "//ncfilename)! , "Success creating "//ncfilename)
+    call error_handler(iret, "Problem creating "//ncfilename, "Success creating "//ncfilename)
 
     iret = nf90_def_dim(output_ncid, "Time", NF90_UNLIMITED, dimid_ntimes)
     call error_handler(iret, "Problem defining dimension")
 
     iret = nf90_def_dim(output_ncid, "num_soil_layers", nsoil, dimid_nsoil)
     call error_handler(iret, "Problem defining dimension")
-    
-    if (nsnow > 0) then
-       iret = nf90_def_dim(output_ncid, "num_snow_layers", nsnow, dimid_nsnow)
-       call error_handler(iret, "Problem defining dimension")
-    endif
     
     if (num_roof_layers > 0) then
        iret = nf90_def_dim(output_ncid, "num_roof_layers", num_roof_layers, dimid_nroof)
@@ -88,41 +68,12 @@ contains
     iret = nf90_put_att(output_ncid, NF90_GLOBAL, "DT", dt)
     call error_handler(iret, "Problem putting attribute 'DT'")
 
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_DVEG", opt_dveg)
-    call error_handler(iret, "Problem putting attribute 'OPT_DVEG'")
 
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_CRS", opt_crs)
-    call error_handler(iret, "Problem putting attribute 'OPT_CRS'")
+    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "IZ0TLND", iz0tlnd)
+    call error_handler(iret, "Problem putting attribute 'IZ0TLND'")
 
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_BTR", opt_btr)
-    call error_handler(iret, "Problem putting attribute 'OPT_BTR'")
-
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_RUN", opt_run)
-    call error_handler(iret, "Problem putting attribute 'OPT_RUN'")
-
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_SFC", opt_sfc)
-    call error_handler(iret, "Problem putting attribute 'OPT_SFC'")
-
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_FRZ", opt_frz)
-    call error_handler(iret, "Problem putting attribute 'OPT_FRZ'")
-
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_INF", opt_inf)
-    call error_handler(iret, "Problem putting attribute 'OPT_INF'")
-
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_RAD", opt_rad)
-    call error_handler(iret, "Problem putting attribute 'OPT_RAD'")
-
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_ALB", opt_alb)
-    call error_handler(iret, "Problem putting attribute 'OPT_ALB'")
-
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_SNF", opt_snf)
-    call error_handler(iret, "Problem putting attribute 'OPT_SNF'")
-
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_TBOT", opt_tbot)
-    call error_handler(iret, "Problem putting attribute 'OPT_TBOT'")
-
-    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "OPT_STC", opt_stc)
-    call error_handler(iret, "Problem putting attribute 'OPT_STC'")
+    iret = nf90_put_att(output_ncid, NF90_GLOBAL, "SFCDIF_OPTION", sfcdif_option)
+    call error_handler(iret, "Problem putting attribute 'SFCDIF_OPTION'")
 
     iret = nf90_enddef(output_ncid)
     call error_handler(iret, "Problem exiting def mode")
@@ -228,7 +179,6 @@ contains
        call error_handler(iret, "enddef problem")
     endif
 
-    ! print*, 'Output time:  ', ktime, '  nowdate: '//nowdate
     iret = nf90_put_var(output_ncid, varid_times, nowdate, start=(/1, ktime/), count=(/12,1/))
     call error_handler(iret, "Problem putting variable 'Times'")
 
@@ -247,24 +197,11 @@ contains
 !------------------------------------------------------------------------------------------------
 !------------------------------------------------------------------------------------------------
 
-  subroutine output_open_for_read(filename, ncid, dt, opt_dveg, opt_crs, opt_btr, opt_run, &
-       opt_sfc, opt_frz, opt_inf, opt_rad, opt_alb, opt_snf, opt_tbot, opt_stc, exptag)
+  subroutine output_open_for_read(filename, ncid, dt, exptag)
     implicit none
     character(len=*),   intent(in)  :: filename
     integer,            intent(out) :: ncid
     real,               intent(out) :: dt
-    integer,            intent(out) :: opt_dveg
-    integer,            intent(out) :: opt_crs
-    integer,            intent(out) :: opt_btr
-    integer,            intent(out) :: opt_run
-    integer,            intent(out) :: opt_sfc
-    integer,            intent(out) :: opt_frz
-    integer,            intent(out) :: opt_inf
-    integer,            intent(out) :: opt_rad
-    integer,            intent(out) :: opt_alb
-    integer,            intent(out) :: opt_snf
-    integer,            intent(out) :: opt_tbot
-    integer,            intent(out) :: opt_stc
     character(len=256), intent(out) :: exptag
     integer :: attlen
     integer :: iret
@@ -275,78 +212,6 @@ contains
     ! Time step
     iret = nf90_get_att(ncid, NF90_GLOBAL, "DT", dt)
     call error_handler(iret, "Problem getting attribute 'DT' from file '"//filename//"'")
-
-    ! Optional OPT_DVEG attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_DVEG", opt_dveg)
-    if (iret /= NF90_NOERR) then
-       opt_dveg = -999
-    endif
-
-    ! Optional CRS attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_CRS", opt_crs)
-    if (iret /= NF90_NOERR) then
-       opt_crs = -999
-    endif
-
-    ! Optional BTR attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_BTR", opt_btr)
-    if (iret /= NF90_NOERR) then
-       opt_btr = -999
-    endif
-
-    ! Optional RUN attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_RUN", opt_run)
-    if (iret /= NF90_NOERR) then
-       opt_run = -999
-    endif
-
-    ! Optional SFC attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_SFC", opt_sfc)
-    if (iret /= NF90_NOERR) then
-       opt_sfc = -999
-    endif
-
-    ! Optional FRZ attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_FRZ", opt_frz)
-    if (iret /= NF90_NOERR) then
-       opt_frz = -999
-    endif
-
-    ! Optional INF attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_INF", opt_inf)
-    if (iret /= NF90_NOERR) then
-       opt_inf = -999
-    endif
-
-    ! Optional RAD attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_RAD", opt_rad)
-    if (iret /= NF90_NOERR) then
-       opt_rad = -999
-    endif
-
-    ! Optional ALB attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_ALB", opt_alb)
-    if (iret /= NF90_NOERR) then
-       opt_alb = -999
-    endif
-
-    ! Optional SNF attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_SNF", opt_snf)
-    if (iret /= NF90_NOERR) then
-       opt_snf = -999
-    endif
-
-    ! Optional TBOT attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_TBOT", opt_tbot)
-    if (iret /= NF90_NOERR) then
-       opt_tbot = -999
-    endif
-
-    ! Optional STC attribute.
-    iret = nf90_get_att(ncid, NF90_GLOBAL, "OPT_STC", opt_stc)
-    if (iret /= NF90_NOERR) then
-       opt_stc = -999
-    endif
 
     ! Optional tag for the experiment.  A string ID for labeling plots.
     exptag = "-"
@@ -397,13 +262,15 @@ contains
     ! Read the variable
 
     iret = nf90_get_var(ncid, varid, var, start=(/startindex/), count=(/endindex-startindex+1/) )
-    call error_handler(iret, "Problem getting varaible "//name)
+    call error_handler(iret, "Problem getting variable "//name)
 
     ! Get the units
+    units = " "
     iret = nf90_get_att(ncid, varid, "units", units)
     call error_handler(iret, "Problem getting 'units' attribute "//name)
 
     ! Get the description
+    description = " "
     iret = nf90_get_att(ncid, varid, "description", description)
     call error_handler(iret, "Problem getting 'description' attribute "//name)
 
@@ -462,13 +329,15 @@ contains
     ! Read the variable
 
     iret = nf90_get_var(ncid, varid, var, start=nstart(1:ndims), count=ncount(1:ndims) )
-    call error_handler(iret, "Problem getting varaible "//name)
+    call error_handler(iret, "Problem getting variable "//name)
 
     ! Get the units
+    units = " "
     iret = nf90_get_att(ncid, varid, "units", units)
     call error_handler(iret, "Problem getting 'units' attribute "//name)
 
     ! Get the description
+    description = " "
     iret = nf90_get_att(ncid, varid, "description", description)
     call error_handler(iret, "Problem getting 'description' attribute "//name)
 
@@ -515,7 +384,7 @@ contains
 
     ! Read the variable
     iret = nf90_get_var(ncid, varid, var)
-    call error_handler(iret, "Problem getting varaible "//name)
+    call error_handler(iret, "Problem getting variable "//name)
 
   end subroutine get_strings_from_output
 

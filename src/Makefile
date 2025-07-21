@@ -3,26 +3,30 @@
 
 include user_build_options
 
-OBJS =	module_sf_noahmplsm.o \
+
+OBJS =	module_sf_noahlsm_glacial_only.o \
+        module_sf_noahlsm.o \
 	module_model_constants.o \
-	module_sf_myjsfc.o \
-	module_sf_sfclay.o \
-	module_sf_noahlsm.o \
-	module_ascii_io.o \
+	module_sf_urban.o \
+	kwm_date_utilities.o \
 	module_netcdf_io.o \
 	module_io.o \
-	kwm_date_utilities.o \
-	module_sf_noahutl.o \
-	driver.o
+	module_ascii_io.o \
+	module_sfcdif_wrf.o \
+	module_Noahlsm_utility.o
 
-CMD = driver.exe
+CMD = driver.exe urban_driver.exe
 
-FFLAGS =	$(FREESOURCE) $(F90FLAGS)
+FFLAGS 	=	$(FREESOURCE) $(F90FLAGS)
 
 all:	$(CMD)
 
 driver.exe:	$(OBJS)
-	$(COMPILERF90) -o $(@) $(OBJS) $(NETCDFLIB)
+	$(COMPILERF90) -o $(@) $(OBJS) simple_driver.o $(NETCDFLIB)
+
+
+urban_driver.exe:	$(OBJS)
+	$(COMPILERF90) -o $(@) $(OBJS) simple_driver_urban.o $(NETCDFLIB)
 
 .F.o:
 	$(RM) $(*).f90
@@ -30,16 +34,17 @@ driver.exe:	$(OBJS)
 	$(COMPILERF90) -c $(FFLAGS) $(NETCDFINC) $(*).f90
 	$(RM) $(*).f90
 
-
 clean:
-	$(RM) $(OBJS) $(CMD) *.mod *~
+	$(RM) $(OBJS) simple_driver.o simple_driver_urban.o $(CMD) *.mod *~
 
-driver.exe:		driver.o
-driver.exe:		module_sf_noahmplsm.o
-driver.exe:		module_sf_noahutl.o
-driver.exe:		module_io.o
-module_io.o:		module_ascii_io.o
-module_io.o:		module_netcdf_io.o
-module_ascii_io.o:	kwm_date_utilities.o
-module_sf_noahmplsm.o:	module_sf_myjsfc.o module_sf_sfclay.o module_sf_noahlsm.o
-module_sf_myjsfc.o:	module_model_constants.o
+urban_driver.exe:			simple_driver_urban.o
+driver.exe:				simple_driver.o
+module_sf_noahlsm.o:			module_sf_urban.o
+module_sf_noahlsm.o:			module_model_constants.o
+module_sf_noahlsm_glacial_only.o:	module_model_constants.o
+module_sf_noahlsm_glacial_only.o:	module_sf_noahlsm.o
+simple_driver.o:			module_io.o
+simple_driver.o:			kwm_date_utilities.o
+simple_driver.o:			module_Noahlsm_utility.o
+module_io.o:				module_ascii_io.o
+module_io.o:				module_netcdf_io.o
